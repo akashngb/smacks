@@ -1,7 +1,6 @@
 /// <reference types="@react-three/fiber" />
-
-import { useRef, useState, Suspense } from 'react';
-import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
+import { useRef, useState, Suspense, useEffect } from 'react';
+import { Canvas, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Annotation, AnnotationSeverity } from '../types';
@@ -13,18 +12,10 @@ interface AnnotationPinProps {
 
 function AnnotationPin({ annotation }: AnnotationPinProps) {
   const [hovered, setHovered] = useState(false);
-  const meshRef = useRef<THREE.Mesh>(null);
   const config = SEVERITY_CONFIG[annotation.severity];
-
-  useFrame(() => {
-    if (meshRef.current) {
-      meshRef.current.scale.setScalar(hovered ? 1.4 : 1.0);
-    }
-  });
 
   return (
     <group position={annotation.position as [number, number, number]}>
-      {/* Outer glow ring */}
       <mesh>
         <sphereGeometry args={[0.035, 16, 16]} />
         <meshStandardMaterial
@@ -35,18 +26,9 @@ function AnnotationPin({ annotation }: AnnotationPinProps) {
           opacity={0.25}
         />
       </mesh>
-
-      {/* Main pin */}
       <mesh
-        ref={meshRef}
-        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
-          e.stopPropagation();
-          setHovered(true);
-        }}
-        onPointerOut={(e: ThreeEvent<PointerEvent>) => {
-          e.stopPropagation();
-          setHovered(false);
-        }}
+        onPointerOver={(e: any) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+        onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
       >
         <sphereGeometry args={[0.022, 16, 16]} />
         <meshStandardMaterial
@@ -57,40 +39,25 @@ function AnnotationPin({ annotation }: AnnotationPinProps) {
           opacity={0.95}
         />
       </mesh>
-
-      {/* Hover tooltip */}
       {hovered && (
         <Html distanceFactor={3} style={{ pointerEvents: 'none' }} position={[0, 0.08, 0]}>
-          <div
-            style={{
-              backgroundColor: '#0d1321',
-              border: `1px solid ${config.color}60`,
-              borderRadius: 10,
-              padding: '10px 14px',
-              minWidth: 180,
-              boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${config.color}20`,
-              backdropFilter: 'blur(10px)',
-            }}
-          >
+          <div style={{
+            backgroundColor: '#0d1321',
+            border: `1px solid ${config.color}60`,
+            borderRadius: 10,
+            padding: '10px 14px',
+            minWidth: 180,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${config.color}20`,
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: config.color,
-                  boxShadow: `0 0 6px ${config.color}`,
-                }}
-              />
-              <span
-                style={{
-                  color: config.color,
-                  fontWeight: 700,
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  textTransform: 'uppercase',
-                }}
-              >
+              <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: config.color }} />
+              <span style={{
+                color: config.color,
+                fontWeight: 700,
+                fontSize: 11,
+                letterSpacing: 1,
+                textTransform: 'uppercase' as const,
+              }}>
                 {config.label}
               </span>
             </div>
@@ -107,29 +74,57 @@ function AnnotationPin({ annotation }: AnnotationPinProps) {
   );
 }
 
-function TeethModel({
+function TeethModelWithCenter({
   annotations,
   selectedSeverity,
   onAddAnnotation,
+  patientId,
+  onCenterFound,
 }: {
   annotations: Annotation[];
   selectedSeverity: AnnotationSeverity;
   onAddAnnotation: (a: Annotation) => void;
+  patientId: string;
+  onCenterFound: (center: [number, number, number]) => void;
 }) {
   const { scene } = useGLTF('/teeth.glb');
   const groupRef = useRef<THREE.Group>(null);
-
+  const { camera } = useThree();
   const clonedScene = scene.clone();
+  const hasCentered = useRef(false);
+  const dragRef = useRef(false);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
-  clonedScene.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh) {
-      const mesh = child as THREE.Mesh;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+  // Reset centering when patient changes so camera snaps to neutral
+  useEffect(() => {
+    hasCentered.current = false;
+  }, [patientId]);
+
+  // Runs every frame until it fires once per patient
+  useEffect(() => {
+    if (groupRef.current && !hasCentered.current) {
+      hasCentered.current = true;
+
+      const box = new THREE.Box3().setFromObject(groupRef.current);
+      const c = new THREE.Vector3();
+      box.getCenter(c);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z);
+
+      camera.position.set(c.x, c.y + maxDim * 0.3, c.z + maxDim * 1.8);
+      camera.lookAt(c.x, c.y, c.z);
+      camera.updateProjectionMatrix();
+
+      onCenterFound([c.x, c.y, c.z]);
     }
   });
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    if (dragRef.current) {
+      dragRef.current = false;
+      return;
+    }
     e.stopPropagation();
     const point = e.point;
     const label = window.prompt('Annotation label (e.g. "Early cavity"):') || '';
@@ -148,15 +143,27 @@ function TeethModel({
     <group ref={groupRef}>
       <primitive
         object={clonedScene}
-        onClick={handleClick}
-        onPointerOver={() => {
-          document.body.style.cursor = 'crosshair';
+        onPointerDown={(e: any) => {
+          pointerDownPos.current = { x: e.clientX, y: e.clientY };
+          dragRef.current = false;
         }}
+        onPointerMove={(e: any) => {
+          if (pointerDownPos.current) {
+            const dx = e.clientX - pointerDownPos.current.x;
+            const dy = e.clientY - pointerDownPos.current.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 4) {
+              dragRef.current = true;
+            }
+          }
+        }}
+        onClick={handleClick}
+        onPointerOver={() => { document.body.style.cursor = 'crosshair'; }}
         onPointerOut={() => {
           document.body.style.cursor = 'default';
+          pointerDownPos.current = null;
         }}
       />
-      {annotations.map((ann) => (
+      {annotations.map(ann => (
         <AnnotationPin key={ann.id} annotation={ann} />
       ))}
     </group>
@@ -166,26 +173,14 @@ function TeethModel({
 function LoadingFallback() {
   return (
     <Html center>
-      <div
-        style={{
-          color: '#00c2ff',
-          fontSize: 14,
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <div
-          style={{
-            width: 16,
-            height: 16,
-            border: '2px solid rgba(0,194,255,0.3)',
-            borderTop: '2px solid #00c2ff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }}
-        />
+      <div style={{
+        color: '#00c2ff',
+        fontSize: 14,
+        fontWeight: 600,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}>
         Loading model...
       </div>
     </Html>
@@ -196,12 +191,18 @@ interface Props {
   annotations: Annotation[];
   selectedSeverity: AnnotationSeverity;
   onAddAnnotation: (a: Annotation) => void;
+  patientId: string;
 }
 
-export default function MouthModel({ annotations, selectedSeverity, onAddAnnotation }: Props) {
+export default function MouthModel({ annotations, selectedSeverity, onAddAnnotation, patientId }: Props) {
+  const [orbitTarget, setOrbitTarget] = useState<[number, number, number]>([0, 0, 0]);
+
   return (
-    <Canvas camera={{ position: [0, 0, 3], fov: 40 }} style={{ background: 'transparent' }} shadows>
-      {/* Lighting */}
+    <Canvas
+      camera={{ position: [0, 2, 6], fov: 35, near: 0.1, far: 100 }}
+      style={{ background: 'transparent' }}
+      shadows
+    >
       <ambientLight intensity={0.7} />
       <directionalLight position={[3, 5, 3]} intensity={1.4} castShadow />
       <directionalLight position={[-3, -2, -2]} intensity={0.4} />
@@ -209,20 +210,23 @@ export default function MouthModel({ annotations, selectedSeverity, onAddAnnotat
       <pointLight position={[0, 0, 3]} intensity={0.3} color="#00c2ff" />
 
       <Suspense fallback={<LoadingFallback />}>
-        <TeethModel
+        <TeethModelWithCenter
           annotations={annotations}
           selectedSeverity={selectedSeverity}
           onAddAnnotation={onAddAnnotation}
+          patientId={patientId}
+          onCenterFound={setOrbitTarget}
         />
       </Suspense>
 
       <OrbitControls
-        enablePan={false}
-        minDistance={1.5}
-        maxDistance={6}
+        enablePan={true}
+        panSpeed={0.6}
+        minDistance={1}
+        maxDistance={12}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 1.4}
-        autoRotate={false}
+        target={orbitTarget}
       />
     </Canvas>
   );

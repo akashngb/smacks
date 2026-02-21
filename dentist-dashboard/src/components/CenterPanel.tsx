@@ -75,6 +75,7 @@ export default function CenterPanel({
               annotations={patient.annotations}
               selectedSeverity={selectedSeverity}
               onAddAnnotation={onAddAnnotation}
+              patientId={patient.id}
             />
           </div>
 

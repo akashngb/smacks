@@ -93,6 +93,10 @@ def health():
     load_model_once()
     return jsonify({"status": "ok", "model_loaded": model is not None})
 
+@app.route('/teeth.glb')
+def serve_model():
+    return send_from_directory('/Users/akashn/Downloads/smacks/mouthwatch-app/assets', 'teeth.glb')
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
     """

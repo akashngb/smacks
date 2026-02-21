@@ -105,10 +105,12 @@ export default function ProgressScreen() {
         {/* 3D Model Button */}
         <TouchableOpacity
           style={styles.modelButton}
-          onPress={() => navigation.navigate('ModelViewer', {
+          onPress={() => navigation.navigate('Scan', {
+                                screen: 'ModelViewer',
+                                params: {
             annotations: history[0]?.annotations || [],
             patientName: 'Your',
-          })}
+          }})}
           activeOpacity={0.85}
         >
           <LinearGradient
@@ -161,10 +163,12 @@ export default function ProgressScreen() {
                   {item.annotations && item.annotations.length > 0 && (
                     <TouchableOpacity
                       style={styles.viewModelBtn}
-                      onPress={() => navigation.navigate('ModelViewer', {
+                      onPress={() => navigation.navigate('Scan', {
+                                      screen: 'ModelViewer',
+                                      params: {
                         annotations: item.annotations,
                         patientName: 'Your',
-                      })}
+                      }})}
                     >
                       <Feather name="box" size={12} color="#00c2ff" />
                       <Text style={styles.viewModelText}>View Model</Text>

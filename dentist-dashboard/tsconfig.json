@@ -1,21 +1,16 @@
 {
   "compilerOptions": {
-    "types": ["@react-three/fiber", "three"],
+    "jsx": "react-jsx",
     "skipLibCheck": true,
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
+    "strict": true,
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    "target": "es6",
+    "lib": ["dom", "esnext"]
   },
   "include": ["src"]
 }

@@ -52,7 +52,7 @@ export default function App() {
         <div style={styles.headerRight}>
           <div style={styles.onlineIndicator}>
             <div style={styles.onlineDot} />
-            <span style={styles.onlineText}>Dr. Sarah Kim</span>
+            <span style={styles.onlineText}>Dr. Kavina Uthayakumaran</span>
           </div>
         </div>
       </div>
