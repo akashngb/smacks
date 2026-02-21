@@ -1,7 +1,5 @@
+flask
+flask-cors
 tensorflow
 pillow
 numpy
-matplotlib
-scikit-learn
-flask
-flask-cors
