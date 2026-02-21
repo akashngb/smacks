@@ -11,14 +11,17 @@ app = Flask(__name__)
 CORS(app)
 
 # ── Load Model & Labels ───────────────────────────────────────────────────────
-print("Loading model...")
-model = tf.keras.models.load_model("best_model.keras")
+model = None
+class_labels = None
 
-with open("class_labels.json", "r") as f:
-    class_labels = json.load(f)
-
-print("Class labels:", class_labels)
-print("✅ Model ready")
+def load_model_once():
+    global model, class_labels
+    if model is None:
+        print("Loading model...")
+        model = tf.keras.models.load_model("best_model.keras")
+        with open("class_labels.json", "r") as f:
+            class_labels = json.load(f)
+        print("✅ Model ready")
 
 # ── Risk Factor Weights ───────────────────────────────────────────────────────
 # These map to your intake form answers
@@ -87,7 +90,8 @@ def get_risk_color(combined_score: float) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "model_loaded": True})
+    load_model_once()
+    return jsonify({"status": "ok", "model_loaded": model is not None})
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -98,6 +102,7 @@ def analyze():
     
     Returns full risk assessment.
     """
+    load_model_once()
     try:
         # ── Validate image ──
         if "image" not in request.files:
