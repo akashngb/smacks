@@ -1,33 +1,11 @@
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { SafeAreaView, StyleSheet, StatusBar, View, Text, TouchableOpacity } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { SafeAreaView, StyleSheet, StatusBar, View, Text, TouchableOpacity, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { getModelViewerHtml } from './modelViewerHtml';
-
-const SEVERITY_COLORS: Record<string, string> = {
-  info: '#2196F3',
-  watch: '#FFD600',
-  moderate: '#FF6D00',
-  urgent: '#FF1744',
-};
 
 export default function ModelViewerScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { annotations = [], patientName = 'Patient' } = route.params || {};
-
-  const annotationsJSON = JSON.stringify(
-    annotations.map((ann: any) => ({
-      position: ann.position,
-      color: SEVERITY_COLORS[ann.severity] || '#ffffff',
-      label: ann.label,
-      note: ann.note,
-      severity: ann.severity,
-    }))
-  );
-
-  const NGROK_URL = 'https://bolar-noncausable-jakobe.ngrok-free.dev';
-  const html = getModelViewerHtml(annotationsJSON, NGROK_URL);
+  const { patientName = 'Patient' } = route.params || {};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,20 +17,14 @@ export default function ModelViewerScreen() {
         <Text style={styles.headerTitle}>{patientName} Mouth Model</Text>
         <View style={{ width: 24 }} />
       </View>
-      <WebView
-        style={styles.webview}
-        source={{ html }}
-        originWhitelist={['*']}
-        javaScriptEnabled
-        allowsInlineMediaPlayback
-        scrollEnabled={false}
-        bounces={false}
-        mixedContentMode="always"
-        allowUniversalAccessFromFileURLs
-        allowFileAccessFromFileURLs
-        onError={(e) => console.log('WebView error:', e.nativeEvent)}
-        onHttpError={(e) => console.log('WebView HTTP error:', e.nativeEvent)}
+      <View style={styles.modelContainer}>
+        <Image
+          source={require('../assets/teeth-preview.jpg')}
+          style={styles.modelImage}
+          resizeMode="contain"
         />
+        <Text style={styles.hint}>Full 3D annotation available on dentist dashboard</Text>
+      </View>
       <View style={styles.legend}>
         {[
           { color: '#2196F3', label: 'Info' },
@@ -82,7 +54,23 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   headerTitle: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
-  webview: { flex: 1, backgroundColor: '#0a0f1e' },
+  modelContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modelImage: {
+    width: '100%',
+    height: '90%',
+    borderRadius: 16,
+  },
+  hint: {
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 11,
+    marginTop: 10,
+    textAlign: 'center',
+  },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
