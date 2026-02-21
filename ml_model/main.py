@@ -65,14 +65,14 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
 
 def get_risk_color(combined_score: float) -> dict:
     """Map combined score to green/yellow/red with messaging."""
-    if combined_score < 35:
+    if combined_score < 45:
         return {
             "color": "green",
             "label": "Low Risk",
             "message": "No immediate concern detected. Continue monitoring and maintain regular dental visits.",
             "urgency": "Routine checkup recommended"
         }
-    elif combined_score < 65:
+    elif combined_score < 72:
         return {
             "color": "yellow",
             "label": "Moderate Risk",
@@ -125,8 +125,8 @@ def analyze():
         # Convert class name to a 0-100 ML risk score
         # cancerous = high risk, non_cancerous = medium, normal = low
         class_risk_map = {
-            "cancer": 100,
-            "non-cancer": 20,
+            "cancer": 70,
+            "non-cancer": 10,
         }
         # Handle any class name variations
         ml_risk_score = 0
