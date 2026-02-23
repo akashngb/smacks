@@ -1,6 +1,6 @@
-sm[ile h]acks 2026!
+My project for SmileHacks 2026 ':)'
 
-# MouthWatch 🦷
+# MouthWatch
 
 AI-powered oral cancer early detection for patients, and a clinical command center for dentists.
 
