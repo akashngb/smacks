@@ -1,5 +1,7 @@
 My project for SmileHacks 2026 ':)'
 
+Note: The full version of this project is not open source. This repository contains only the original hackathon submission and does not reflect ongoing development or subsequent improvements.
+
 # MouthWatch
 
 AI-powered oral cancer early detection for patients, and a clinical command center for dentists.
